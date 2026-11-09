@@ -1,0 +1,22 @@
+# SignXAI - optional LLM (vision-narrative) dependencies.
+# Only needed if you want the AI-generated forensic explanation layer;
+# the core app (main.py / cli.py) works fully without these -- see
+# PROJECT_MEMORY_v6.md Bug #1 for why this changed from torch/transformers.
+#
+# IMPORTANT: do not just `pip install -r requirements-llm.txt` directly --
+# run `python install.py --llm` instead, which picks the correct prebuilt-
+# wheel index for your OS/GPU automatically (see PROJECT_MEMORY_v6.md
+# Bug #25). llama-cpp-python ships compiled C extensions, so it cannot be
+# pinned to one universal wheel filename the way this file used to imply --
+# the version below is unpinned deliberately, and install.py resolves the
+# right build for your exact Python version + platform via the project's
+# own documented package index instead of a hardcoded URL.
+#
+# If you must install manually, pick your backend from:
+#   https://github.com/abetlen/llama-cpp-python#supported-backends
+# e.g.:
+#   pip install llama-cpp-python --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
+#   pip install llama-cpp-python --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/metal
+#   pip install llama-cpp-python --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu121
+llama-cpp-python
+huggingface_hub>=0.24

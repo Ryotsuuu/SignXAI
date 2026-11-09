@@ -1,0 +1,6 @@
+# SignXAI - optional dependencies for training/calibrate_weights.py only.
+# NOT needed to run the app itself (main.py / cli.py) — only if you want to
+# recalibrate the fusion weights against a labelled dataset (see
+# docs/TRAINING.md). Install with:
+#   .venv/bin/python -m pip install -r requirements-train.txt
+scikit-learn>=1.3

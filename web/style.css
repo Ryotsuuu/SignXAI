@@ -1,0 +1,283 @@
+/* SignXAI web UI — v6 restyle applied: "Browserbase" reference (editorial
+   broadsheet meets data terminal). See PROJECT_MEMORY_v6.md Bug #29 for
+   the reasoning. Near-monochrome canvas, soft pastel card surfaces, a
+   single accent color reserved for emphasis (never buttons/actions —
+   verdict banners are the one deliberate exception, since color there is
+   load-bearing information, not decoration), tiny mono metadata labels,
+   hairline borders instead of shadows for elevation. */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  /* Surfaces */
+  --ink-black: #000000;
+  --paper-white: #ffffff;
+  --faint-slate: #f8fafc;
+  --lavender-mist: #e2e9f3;
+  --blue-gray-mist: #c5d3e8;
+  --cream-wash: #fffde6;
+  --sky-tint: #c4edff;
+  --graphite: #686562;
+  --signal-orange: #ff4500;
+
+  /* Semantic (verdict colors carry real information -- not decoration,
+     so they're the one place saturated color appears outside orange) */
+  --genuine: #1a7a42;
+  --forged: #c23b2e;
+  --inconclusive: #b8860b;
+  --hairline: #e2e9f3;
+  --hairline-strong: #000000;
+
+  --font-plain: 'Inter', ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: 'Space Grotesk', 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper-white);
+  color: var(--ink-black);
+  font-family: var(--font-plain);
+  font-size: 16px;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+}
+
+/* ------------------------------------------------------------- topbar */
+.topbar {
+  display: flex; align-items: center; gap: 16px;
+  padding: 12px 40px;
+  background: var(--paper-white);
+  border-bottom: 1px solid var(--hairline);
+  position: sticky; top: 0; z-index: 10;
+}
+.logo {
+  font-family: var(--font-display); font-size: 20px; font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.topnav { display: flex; gap: 4px; flex: 1; }
+.navlink {
+  color: var(--ink-black); text-decoration: none; font-size: 15px; font-weight: 500;
+  padding: 8px 16px; border-radius: 999px; transition: background-color .15s ease;
+}
+.navlink:hover { background: var(--faint-slate); }
+.navlink.active { background: var(--ink-black); color: var(--paper-white); }
+.llm-pill {
+  font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.04em;
+  padding: 6px 14px; border-radius: 999px; text-transform: uppercase;
+  background: var(--lavender-mist); color: var(--ink-black);
+}
+
+.canvas-page { max-width: 960px; margin: 0 auto; padding: 56px 24px 120px; }
+.view { display: none; }
+.view.active { display: block; }
+
+.editorial-heading {
+  font-family: var(--font-display); font-weight: 600; font-size: 40px;
+  line-height: 1.1; letter-spacing: -0.02em; margin: 0 0 10px;
+}
+.section-heading {
+  font-family: var(--font-display); font-weight: 600; font-size: 22px;
+  letter-spacing: -0.01em; margin: 0 0 4px;
+}
+.section-eyebrow {
+  font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--graphite); margin: 0 0 6px;
+}
+.lede { color: var(--graphite); font-size: 16px; margin: 0 0 32px; max-width: 640px; }
+
+.card {
+  background: var(--paper-white); border: 1px solid var(--hairline); border-radius: 8px;
+  padding: 28px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.card.tint-lavender { background: var(--lavender-mist); border-color: transparent; }
+.card.tint-slate { background: var(--faint-slate); border-color: transparent; }
+
+.section-block { margin: 48px 0; }
+.section-block:first-child { margin-top: 0; }
+
+.field-label {
+  font-family: var(--font-mono); font-size: 12px; font-weight: 500; text-transform: uppercase;
+  letter-spacing: .05em; color: var(--graphite); margin-top: 18px;
+}
+.text-input, .file-input {
+  padding: 11px 14px; border: 1px solid var(--ink-black); border-radius: 4px;
+  font-family: var(--font-plain); font-size: 15px; background: var(--paper-white); color: var(--ink-black);
+}
+.text-input:focus, textarea.text-input:focus {
+  outline: 2px solid var(--signal-orange); outline-offset: 1px;
+}
+textarea.text-input { resize: vertical; font-family: var(--font-plain); }
+.warning-box {
+  background: var(--cream-wash); border: 1px solid #e8c27a; color: #6b4d00;
+  border-radius: 4px; padding: 14px 16px; font-size: 14px;
+}
+/* v9 (Bug #59): verdict-reason box, colour keyed to WHICH of the three
+   distinct code paths produced the verdict -- a clean, well-separated
+   score (blue-grey, calm); a genuinely borderline band score (amber, same
+   family as warning-box since it IS worth a second look, but not an
+   error); an edge-case downgrade where evidence disagreed with itself
+   (same amber family, slightly stronger border, since this is the case
+   most worth a human's attention). */
+.reason-box {
+  border-radius: 4px; padding: 12px 16px; font-size: 13.5px; margin: 10px 0;
+  border: 1px solid #d8dde3; background: #f4f6f8; color: #3a4450;
+}
+.reason-box.reason-borderline_band, .reason-box.reason-edge_case_downgrade {
+  background: var(--cream-wash); border-color: #e8c27a; color: #6b4d00;
+}
+.reason-box p { margin: 6px 0 0 0; line-height: 1.5; }
+.reason-diagnostics { margin-top: 8px; font-size: 12.5px; opacity: 0.9; }
+.reason-diagnostics ul { margin: 6px 0 0 18px; padding: 0; }
+.hidden { display: none !important; }
+
+.sign-pad {
+  background: var(--paper-white); border: 1px dashed var(--graphite);
+  border-radius: 4px; width: 100%; height: 220px; touch-action: none;
+  cursor: crosshair;
+}
+.pad-controls { display: flex; gap: 12px; margin-top: 8px; }
+
+/* -------------------------------------------------------------- buttons
+   Browserbase rule: filled black 50px pill for every primary action; the
+   orange accent is NEVER a button color, only typographic emphasis. */
+.btn-dark {
+  background: var(--ink-black); color: var(--paper-white); border: none;
+  border-radius: 50px; padding: 10px 24px; font-family: var(--font-plain);
+  font-size: 15px; font-weight: 500; cursor: pointer; transition: opacity .15s ease;
+}
+.btn-dark:hover { opacity: .82; }
+.btn-dark:disabled { opacity: .4; cursor: not-allowed; }
+.btn-ghost {
+  background: transparent; color: var(--ink-black); border: 1px solid var(--ink-black);
+  border-radius: 50px; padding: 10px 24px; font-family: var(--font-plain);
+  font-size: 15px; font-weight: 500; cursor: pointer; transition: background-color .15s ease;
+}
+.btn-ghost:hover { background: var(--faint-slate); }
+.btn-ghost.on-dark { color: #fff; border-color: rgba(255,255,255,.6); }
+.btn-ghost.on-dark:hover { background: rgba(255,255,255,.12); }
+.btn-wide { width: 100%; margin-top: 22px; padding: 15px; font-size: 16px; }
+
+/* --------------------------------------------------------------- thumbs
+   v6 fix (Bug #29, PROJECT_MEMORY_v6.md, user-reported: missing remove
+   control on enrollment thumbnails) -- every added sample now has a
+   visible, always-present remove (×) button. */
+.thumb-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
+.thumb-item {
+  position: relative; width: 96px; height: 52px;
+  background: var(--faint-slate); border-radius: 4px; border: 1px solid var(--hairline);
+  overflow: visible;
+}
+.thumb-item img {
+  width: 100%; height: 100%; object-fit: contain; border-radius: 4px;
+}
+.thumb-remove {
+  position: absolute; top: -8px; right: -8px; width: 22px; height: 22px;
+  border-radius: 50%; background: var(--ink-black); color: #fff; border: 2px solid var(--paper-white);
+  font-size: 13px; line-height: 1; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-family: var(--font-plain); padding: 0;
+}
+.thumb-remove:hover { background: var(--forged); }
+
+.result-box {
+  margin-top: 18px; padding: 16px; border-radius: 4px; font-size: 14px;
+  background: var(--lavender-mist);
+}
+
+.result-panel { margin-top: 40px; display: flex; flex-direction: column; gap: 12px; }
+
+/* ---------------------------------------------------------- verdict banner
+   The one place saturated, non-orange color is used deliberately: verdict
+   color is load-bearing information (genuine/forged/inconclusive), not
+   decoration, so it's exempt from the monochrome-canvas rule. */
+.verdict-banner {
+  border-radius: 8px; padding: 28px 32px; color: #fff;
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 24px;
+  flex-wrap: wrap;
+}
+.verdict-banner.genuine { background: var(--genuine); }
+.verdict-banner.forged { background: var(--forged); }
+.verdict-banner.inconclusive { background: var(--inconclusive); }
+.verdict-title { font-family: var(--font-display); font-weight: 700; font-size: 34px; letter-spacing: -0.01em; }
+.verdict-confidence { font-size: 14px; opacity: .92; max-width: 480px; margin-top: 4px; }
+.verdict-actions { display: flex; flex-direction: column; gap: 8px; min-width: 220px; }
+.verdict-actions label {
+  display: flex; align-items: center; gap: 8px; color: #fff; font-size: 13px; margin-bottom: 2px;
+}
+
+/* --------------------------------------------------------- section groups */
+.subsection-title {
+  font-family: var(--font-display); font-weight: 600; font-size: 20px;
+  letter-spacing: -0.01em; margin: 8px 0 2px;
+}
+.subsection-sub { font-size: 13px; color: var(--graphite); margin: 0 0 16px; }
+
+.evidence-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+}
+.evidence-grid.single-col { grid-template-columns: 1fr; }
+.evidence-grid figure {
+  margin: 0; background: var(--faint-slate); border: 1px solid var(--hairline);
+  border-radius: 4px; padding: 12px;
+}
+.evidence-grid img { width: 100%; border-radius: 4px; background: var(--paper-white); display: block; }
+.evidence-grid figcaption {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.02em;
+  color: var(--graphite); margin-top: 8px;
+}
+
+.metrics-table {
+  background: var(--paper-white); border: 1px solid var(--hairline); border-radius: 4px;
+  padding: 4px 20px; width: 100%; border-collapse: collapse; font-size: 13.5px;
+}
+.metrics-table th {
+  text-align: left; color: var(--graphite); font-weight: 500; padding: 10px 8px;
+  font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;
+}
+.metrics-table td { padding: 9px 8px; border-top: 1px solid var(--hairline); }
+.metrics-table tr.deviant td:first-child { color: var(--forged); font-weight: 600; }
+.metric-row { cursor: pointer; }
+.metric-row:hover { background: var(--faint-slate); }
+.expand-hint { color: var(--graphite); font-size: 11px; transition: transform .15s ease; display: inline-block; }
+.metric-detail td { background: var(--faint-slate); font-size: 13.5px; line-height: 1.6; padding: 14px 16px; }
+
+.narrative-card {
+  background: var(--paper-white); border: 1px solid var(--hairline); border-radius: 4px; padding: 24px;
+  font-size: 14.5px; white-space: pre-wrap;
+}
+.narrative-card.ai-narrative { background: var(--sky-tint); border-color: transparent; }
+.narrative-source {
+  font-family: var(--font-mono); font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.05em; color: var(--graphite); margin-bottom: 10px;
+}
+
+/* -------------------------------------------------------------- remark
+   v6 (Bug #29, PROJECT_MEMORY_v6.md, user-reported): a real remark field
+   plus an explicit Submit action, instead of Confirm/Mark-wrong instantly
+   submitting with no way to add context. */
+.remark-block { margin-top: 6px; }
+.remark-actions { display: flex; gap: 10px; margin-top: 10px; align-items: center; flex-wrap: wrap; }
+
+.case-table { display: flex; flex-direction: column; gap: 8px; }
+.case-row {
+  display: grid; grid-template-columns: 1fr 1fr 100px 100px 160px;
+  background: var(--paper-white); border: 1px solid var(--hairline); border-radius: 4px;
+  padding: 12px 16px; font-size: 13.5px; align-items: center;
+}
+.case-row .badge {
+  padding: 3px 12px; border-radius: 999px; font-size: 11px; color: #fff;
+  width: fit-content; font-family: var(--font-mono); letter-spacing: 0.03em;
+}
+.badge.GENUINE { background: var(--genuine); }
+.badge.FORGED { background: var(--forged); }
+.badge.INCONCLUSIVE { background: var(--inconclusive); }
+
+.footband {
+  background: var(--signal-orange); color: var(--ink-black); font-size: 13px;
+  padding: 32px 40px; text-align: center; font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+}
+.footband a { color: var(--ink-black); }

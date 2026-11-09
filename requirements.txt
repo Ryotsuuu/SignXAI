@@ -1,0 +1,13 @@
+# SignXAI - core engine dependencies (always required, CPU-friendly)
+numpy>=1.24
+pillow>=10.0
+opencv-python-headless>=4.8
+scikit-image>=0.21
+scipy>=1.10
+fastapi>=0.110
+uvicorn[standard]>=0.27
+python-multipart>=0.0.9
+pydantic>=2.5
+reportlab>=4.0
+psutil>=5.9
+rich>=13.7

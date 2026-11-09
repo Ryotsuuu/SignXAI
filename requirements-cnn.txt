@@ -1,0 +1,24 @@
+# SignXAI - optional CNN-SigNet + Grad-CAM dependency.
+# NOT needed to run the app -- the core classical verification pipeline
+# (the one that's been tested against real data throughout this project)
+# works fully without this. This adds an OPTIONAL, additional CNN-based
+# similarity signal + a genuine gradient-based Grad-CAM heatmap, trained
+# fresh per-profile from only that profile's own enrolled samples
+# (heavily augmented) -- no external dataset, ever.
+#
+# IMPORTANT — read before installing (PROJECT_MEMORY_v6.md v4 has the full
+# story): plain `pip install torch` on Linux can pull several GB of bundled
+# NVIDIA CUDA libraries as REQUIRED dependencies, even on a machine with no
+# GPU at all -- this exhausted disk space during this project's own testing.
+# Installing torch --no-deps to avoid that then fails to even IMPORT with
+# "libcudnn.so.9: cannot open shared object file", because recent PyPI
+# Linux torch builds are hard-linked against CUDA at the C-extension level.
+#
+# The reliable way to get a genuinely CPU-only build (small download, no
+# CUDA dependency at all) is PyTorch's own index, not plain PyPI:
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+#
+# This was not independently verified end-to-end in this project's
+# development environment (that index wasn't reachable from the sandbox
+# network policy) -- please report back if you hit any issues.
+torch

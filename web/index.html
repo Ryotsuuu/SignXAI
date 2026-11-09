@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SignXAI — Handwritten Signature Verification Using Explainable AI</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">SignXAI</div>
+  <nav class="topnav">
+    <a href="#enroll" data-view="enroll" class="navlink active">Enroll</a>
+    <a href="#verify" data-view="verify" class="navlink">Verify</a>
+    <a href="#cases" data-view="cases" class="navlink">Case Log</a>
+    <a href="#llm" data-view="llm" class="navlink">AI Model</a>
+  </nav>
+  <div class="llm-pill" id="llmPill">LLM: checking…</div>
+</header>
+
+<main class="canvas-page">
+
+  <!-- ENROLL VIEW -->
+  <section id="view-enroll" class="view active">
+    <h1 class="editorial-heading">Enroll a Signer</h1>
+    <p class="lede">Provide 2–5 genuine signature samples. The system learns this
+      person's natural signature variation from these samples only — no external
+      dataset, no pretraining.</p>
+
+    <div class="card">
+      <label class="field-label">Signer name</label>
+      <input id="enrollName" class="text-input" placeholder="e.g. ryotsuuu" />
+      <div id="nameMatchWarning" class="warning-box hidden"></div>
+
+      <label class="field-label">Sign here (or upload images below)</label>
+      <canvas id="padEnroll" width="700" height="220" class="sign-pad"></canvas>
+      <div class="pad-controls">
+        <button class="btn-ghost" id="clearEnroll">Clear pad</button>
+        <button class="btn-dark" id="addFromPad">Add this signature</button>
+      </div>
+
+      <label class="field-label">Or upload image files</label>
+      <input id="fileEnroll" type="file" accept="image/*" multiple class="file-input" />
+
+      <div id="enrollThumbs" class="thumb-row"></div>
+
+      <button class="btn-dark btn-wide" id="submitEnroll">Create / Update Profile</button>
+      <div id="enrollResult" class="result-box hidden"></div>
+    </div>
+  </section>
+
+  <!-- VERIFY VIEW -->
+  <section id="view-verify" class="view">
+    <h1 class="editorial-heading">Verify a Signature</h1>
+    <p class="lede">Select an enrolled profile, provide the questioned signature,
+      and the system will render a full forensic examination: metrics, visual
+      evidence, and — if a local vision model is installed — a plain-language
+      explanation.</p>
+
+    <div class="card">
+      <label class="field-label">Profile</label>
+      <select id="verifyProfile" class="text-input"></select>
+
+      <label class="field-label">Questioned signature</label>
+      <canvas id="padVerify" width="700" height="220" class="sign-pad"></canvas>
+      <div class="pad-controls">
+        <button class="btn-ghost" id="clearVerify">Clear pad</button>
+      </div>
+      <input id="fileVerify" type="file" accept="image/*" class="file-input" />
+
+      <button class="btn-dark btn-wide" id="submitVerify">Run Verification</button>
+    </div>
+
+    <div id="verifyResult" class="result-panel hidden"></div>
+  </section>
+
+  <!-- CASE LOG VIEW -->
+  <section id="view-cases" class="view">
+    <h1 class="editorial-heading">Case Log</h1>
+    <p class="lede">Every verification performed on this machine, most recent first.</p>
+    <div id="caseTable" class="case-table"></div>
+  </section>
+
+  <!-- LLM VIEW -->
+  <section id="view-llm" class="view">
+    <h1 class="editorial-heading">Local AI Explanation Model</h1>
+    <p class="lede">Optional. The engine's verdict never depends on this model — it
+      only narrates metrics the engine already computed.</p>
+    <div class="card" id="llmCard">Loading device status…</div>
+  </section>
+
+</main>
+
+<footer class="footband">
+  SignXAI — self-calibrating, no pretraining, runs fully offline once the
+  optional model is downloaded.
+</footer>
+
+<script src="/app.js"></script>
+</body>
+</html>

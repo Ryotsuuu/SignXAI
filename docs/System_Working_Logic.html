@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SignXAI — System Working Logic</title>
+<style>
+  :root {
+    --bone: #f8f8f6; --paper: #ffffff; --stone: #efeeeb;
+    --ink: #121212; --graphite: #373734; --ashen: #7b7974;
+    --pebble: #9c9a92; --mist: #b7b7b5; --chalk: #e7e6e1;
+    --clay: #d97757; --genuine: #2f7d4f; --forged: #b23b2e; --inconclusive: #b8860b;
+    --code-bg: #1e1e1e; --code-fg: #d4d4d4;
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bone); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,sans-serif; line-height:1.6; }
+  .shell { display:flex; max-width:1400px; margin:0 auto; }
+  nav { position:sticky; top:0; height:100vh; width:260px; flex-shrink:0; overflow-y:auto; padding:32px 16px; border-right:1px solid var(--chalk); background:var(--bone); }
+  nav a { display:block; color:var(--graphite); text-decoration:none; font-size:13px; padding:6px 10px; border-radius:6px; margin-bottom:2px; }
+  nav a:hover { background:var(--stone); }
+  main { flex:1; padding:48px 64px 120px; max-width:980px; }
+  h1 { font-family:Georgia,serif; font-size:36px; font-weight:400; margin:0 0 8px; }
+  h2 { font-family:Georgia,serif; font-size:26px; font-weight:400; margin:56px 0 16px; padding-top:24px; border-top:1px solid var(--chalk); }
+  h3 { font-size:17px; font-weight:600; margin:28px 0 10px; color:var(--graphite); }
+  p { color:var(--graphite); font-size:15px; }
+  .lede { font-size:17px; color:var(--ashen); max-width:760px; }
+  .badge { display:inline-block; background:var(--stone); color:var(--graphite); font-size:11px; padding:3px 10px; border-radius:999px; margin-right:6px; }
+  .card { background:var(--paper); border-radius:16px; padding:24px 28px; margin:16px 0; border:1px solid var(--chalk); }
+  .diagram { background:var(--paper); border-radius:16px; padding:24px; margin:20px 0; border:1px solid var(--chalk); overflow-x:auto; }
+  .diagram svg { display:block; margin:0 auto; }
+  table { width:100%; border-collapse:collapse; font-size:13.5px; margin:16px 0; background:var(--paper); border-radius:12px; overflow:hidden; }
+  th { background:var(--ink); color:var(--bone); text-align:left; padding:9px 12px; font-weight:500; }
+  td { padding:8px 12px; border-top:1px solid var(--chalk); vertical-align:top; }
+  tr:nth-child(even) td { background:var(--stone); }
+  code { background:var(--stone); padding:1px 6px; border-radius:4px; font-size:13px; font-family:'SF Mono',Consolas,monospace; }
+  pre { background:var(--code-bg); color:var(--code-fg); padding:16px 20px; border-radius:10px; overflow-x:auto; font-size:12.5px; line-height:1.5; }
+  .callout { border-left:3px solid var(--clay); background:var(--stone); padding:12px 18px; border-radius:0 10px 10px 0; margin:16px 0; font-size:14px; }
+  .callout b { color:var(--ink); }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  footer { text-align:center; padding:40px; color:var(--pebble); font-size:12px; }
+</style>
+</head>
+<body>
+<div class="shell">
+<nav>
+  <div style="font-family:Georgia,serif;font-size:18px;margin-bottom:20px;">SignXAI</div>
+  <a href="#overview">1. Overview</a>
+  <a href="#architecture">2. Architecture</a>
+  <a href="#enroll-flow">3. Enrollment Workflow</a>
+  <a href="#verify-flow">4. Verification Workflow</a>
+  <a href="#preprocessing">5. Preprocessing Pipeline</a>
+  <a href="#features">6. Feature Extraction</a>
+  <a href="#similarity">7. Similarity Fusion</a>
+  <a href="#threshold">8. Threshold &amp; Decision Logic</a>
+  <a href="#xai">9. Explainable AI Layer</a>
+  <a href="#evidence">10. Visual Evidence</a>
+  <a href="#feedback">11. Online Feedback Loop</a>
+  <a href="#gpu">12. Hardware &amp; GPU Selection</a>
+  <a href="#files">13. Codebase Reference</a>
+  <a href="#stack">14. Technology Stack</a>
+  <a href="#history">15. Version History</a>
+  <a href="#v4">16. v4 Additions</a>
+  <a href="#limits">17. Honest Limitations</a>
+</nav>
+<main>
+
+<h1>System Working Logic</h1>
+<p class="lede">SignXAI — Handwritten Signature Verification Using Explainable AI.
+Complete technical explanation of how the system enrolls a signer, verifies a
+questioned signature, decides GENUINE / FORGED / INCONCLUSIVE, and explains
+that decision — for presentation and onboarding purposes.</p>
+<div style="margin:16px 0;">
+  <span class="badge">v3</span>
+  <span class="badge">No pretrained model</span>
+  <span class="badge">Runs fully offline</span>
+  <span class="badge">Cross-platform</span>
+</div>
+
+<h2 id="overview">1. Overview</h2>
+<p>A signer enrolls 1–5 genuine signature samples. The system builds a
+statistical profile of that specific person's natural signature variation
+— <b>not</b> a general model trained on thousands of other people's
+signatures. When a new (questioned) signature arrives, it's compared
+against that profile using seven independent classical computer-vision
+comparison methods, fused into one similarity score, and judged against a
+threshold calibrated from that person's own samples. An optional local
+vision-language model can narrate the result in plain language — but it
+never makes the decision itself.</p>
+
+<div class="callout"><b>Core design principle:</b> the system is built on
+two separate "brains" that never cross responsibilities. The <b>decision
+engine</b> (classical, deterministic, auditable) decides valid/invalid.
+The <b>explanation layer</b> (optionally an AI model) only narrates
+metrics the decision engine already computed. See Section 9 for why this
+split exists.</div>
+
+<h2 id="architecture">2. High-Level Architecture</h2>
+<div class="diagram">
+<svg viewBox="0 0 920 480" xmlns="http://www.w3.org/2000/svg" width="100%">
+  <style>
+    .box{fill:#ffffff;stroke:#b7b7b5;stroke-width:1.2;}
+    .boxd{fill:#121212;stroke:#121212;}
+    .lbl{font-family:-apple-system,sans-serif;font-size:13px;fill:#121212;}
+    .lbld{font-family:-apple-system,sans-serif;font-size:13px;fill:#f8f8f6;}
+    .cap{font-family:-apple-system,sans-serif;font-size:11px;fill:#7b7974;}
+    .arr{stroke:#9c9a92;stroke-width:1.5;fill:none;marker-end:url(#ah);}
+  </style>
+  <defs><marker id="ah" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#9c9a92"/></marker></defs>
+
+  <rect class="box" x="20" y="20" width="200" height="60" rx="10"/>
+  <text class="lbl" x="40" y="45">Entry points</text>
+  <text class="cap" x="40" y="62">main.py (web) / cli.py</text>
+
+  <rect class="box" x="20" y="120" width="200" height="60" rx="10"/>
+  <text class="lbl" x="40" y="145">API layer</text>
+  <text class="cap" x="40" y="162">app/api/routes.py</text>
+
+  <rect class="boxd" x="20" y="220" width="200" height="90" rx="10"/>
+  <text class="lbld" x="40" y="245">DECISION ENGINE</text>
+  <text class="cap" x="40" y="262" fill="#b7b7b5">app/core/engine.py</text>
+  <text class="cap" x="40" y="278" fill="#b7b7b5">enroll / verify / feedback</text>
+  <text class="cap" x="40" y="294" fill="#d97757">No pretrained model</text>
+
+  <rect class="box" x="20" y="350" width="200" height="110" rx="10"/>
+  <text class="lbl" x="40" y="375">Support modules</text>
+  <text class="cap" x="40" y="392">preprocess · align</text>
+  <text class="cap" x="40" y="408">features · similarity</text>
+  <text class="cap" x="40" y="424">explain (evidence images)</text>
+  <text class="cap" x="40" y="440">storage (JSON persistence)</text>
+
+  <rect class="box" x="340" y="220" width="220" height="90" rx="10"/>
+  <text class="lbl" x="360" y="245">Verdict + Metrics</text>
+  <text class="cap" x="360" y="262">GENUINE / INCONCLUSIVE / FORGED</text>
+  <text class="cap" x="360" y="278">score, threshold, z-scores</text>
+  <text class="cap" x="360" y="294">per-feature deviation table</text>
+
+  <rect class="boxd" x="660" y="220" width="240" height="90" rx="10"/>
+  <text class="lbld" x="680" y="245">EXPLANATION LAYER</text>
+  <text class="cap" x="680" y="262" fill="#b7b7b5">app/llm/report.py</text>
+  <text class="cap" x="680" y="278" fill="#b7b7b5">narrates metrics only —</text>
+  <text class="cap" x="680" y="294" fill="#d97757">never re-decides validity</text>
+
+  <rect class="box" x="660" y="350" width="240" height="110" rx="10"/>
+  <text class="lbl" x="680" y="375">Two explanation paths</text>
+  <text class="cap" x="680" y="394">1. Deterministic template</text>
+  <text class="cap" x="680" y="410">   (always available, rule-based)</text>
+  <text class="cap" x="680" y="428">2. Local vision LLM (optional)</text>
+  <text class="cap" x="680" y="444">   llama-cpp-python + GGUF</text>
+
+  <path class="arr" d="M120,80 L120,120"/>
+  <path class="arr" d="M120,180 L120,220"/>
+  <path class="arr" d="M220,265 L340,265"/>
+  <path class="arr" d="M120,310 L120,350"/>
+  <path class="arr" d="M220,405 L220,265" stroke-dasharray="3,3"/>
+  <path class="arr" d="M560,265 L660,265"/>
+  <path class="arr" d="M780,310 L780,350" stroke-dasharray="3,3"/>
+</svg>
+</div>
+<p style="text-align:center;font-size:12px;color:var(--ashen);">Dashed arrows: support/reference relationships. Solid arrows: data flow for one verification request.</p>
+
+<h2 id="enroll-flow">3. Enrollment Workflow</h2>
+<p>Enrolling a signer builds their personal statistical profile from 1–5
+genuine samples. No external data is used at any point.</p>
+<div class="diagram">
+<svg viewBox="0 0 960 200" xmlns="http://www.w3.org/2000/svg" width="100%">
+  <style>.s{fill:#ffffff;stroke:#b7b7b5;} .t{font-family:-apple-system,sans-serif;font-size:12.5px;fill:#121212;} .n{font-family:-apple-system,sans-serif;font-size:10.5px;fill:#7b7974;} .a{stroke:#9c9a92;stroke-width:1.5;fill:none;marker-end:url(#ah2);}</style>
+  <defs><marker id="ah2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#9c9a92"/></marker></defs>
+  <rect class="s" x="10" y="60" width="130" height="70" rx="10"/><text class="t" x="24" y="90">1-5 genuine</text><text class="t" x="24" y="106">images</text>
+  <rect class="s" x="180" y="60" width="140" height="70" rx="10"/><text class="t" x="192" y="85">Preprocess</text><text class="n" x="192" y="102">EXIF fix, Otsu,</text><text class="n" x="192" y="116">crop, normalize</text>
+  <rect class="s" x="360" y="60" width="140" height="70" rx="10"/><text class="t" x="372" y="85">Extract features</text><text class="n" x="372" y="102">~20 scalars +</text><text class="n" x="372" y="116">HOG/LBP/Hu</text>
+  <rect class="s" x="540" y="60" width="150" height="70" rx="10"/><text class="t" x="552" y="85">Save original</text><text class="n" x="552" y="102">image + features</text><text class="n" x="552" y="116">to profile</text>
+  <rect class="s" x="730" y="30" width="210" height="130" rx="10"/><text class="t" x="742" y="55">Recalibrate profile</text>
+  <text class="n" x="742" y="75">mean/std per feature</text>
+  <text class="n" x="742" y="90">intra-ref comparison</text>
+  <text class="n" x="742" y="105">(same aligned scoring</text>
+  <text class="n" x="742" y="118">path as verification)</text>
+  <text class="n" x="742" y="138">→ adaptive threshold</text>
+  <text class="n" x="742" y="152" fill="#d97757">shrinkage-corrected</text>
+  <path class="a" d="M140,95 L180,95"/><path class="a" d="M320,95 L360,95"/><path class="a" d="M500,95 L540,95"/><path class="a" d="M690,95 L730,95"/>
+</svg>
+</div>
+<p><b>Key detail:</b> the <em>original</em> decoded image is saved (not an
+already-processed version) — see Section 5's note on why re-preprocessing
+must happen exactly once, identically, every time an image is loaded.</p>
+
+<h2 id="verify-flow">4. Verification Workflow</h2>
+<div class="diagram">
+<svg viewBox="0 0 980 260" xmlns="http://www.w3.org/2000/svg" width="100%">
+  <style>.s{fill:#ffffff;stroke:#b7b7b5;} .t{font-family:-apple-system,sans-serif;font-size:12.5px;fill:#121212;} .n{font-family:-apple-system,sans-serif;font-size:10.5px;fill:#7b7974;} .a{stroke:#9c9a92;stroke-width:1.5;fill:none;marker-end:url(#ah3);} .g{fill:#2f7d4f;} .i{fill:#b8860b;} .f{fill:#b23b2e;}</style>
+  <defs><marker id="ah3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#9c9a92"/></marker></defs>
+  <rect class="s" x="10" y="90" width="130" height="60" rx="10"/><text class="t" x="24" y="115">Questioned</text><text class="t" x="24" y="131">signature</text>
+  <rect class="s" x="180" y="90" width="140" height="60" rx="10"/><text class="t" x="192" y="115">Preprocess +</text><text class="t" x="192" y="131">extract features</text>
+  <rect class="s" x="360" y="30" width="180" height="180" rx="10"/>
+  <text class="t" x="374" y="55">For EACH enrolled ref:</text>
+  <text class="n" x="374" y="78">1. Rigid align (ICP-style)</text>
+  <text class="n" x="374" y="96">2. SSIM · IoU · HOG · LBP</text>
+  <text class="n" x="374" y="112">3. Hu-moment cosine · DTW</text>
+  <text class="n" x="374" y="128">4. Scalar z-score profile</text>
+  <text class="n" x="374" y="150">→ 7-way weighted fusion</text>
+  <text class="n" x="374" y="166">→ take the BEST-matching ref</text>
+  <text class="n" x="374" y="188" fill="#d97757">(max score across refs)</text>
+  <rect class="s" x="580" y="90" width="160" height="60" rx="10"/><text class="t" x="594" y="115">Fused score vs</text><text class="t" x="594" y="131">personal threshold</text>
+  <rect class="s" x="780" y="20" width="180" height="45" rx="10"/><text class="g" x="795" y="47" font-family="-apple-system" font-size="13">GENUINE</text>
+  <rect class="s" x="780" y="97" width="180" height="45" rx="10"/><text class="i" x="770" y="124" font-family="-apple-system" font-size="13">INCONCLUSIVE</text>
+  <rect class="s" x="780" y="174" width="180" height="45" rx="10"/><text class="f" x="800" y="201" font-family="-apple-system" font-size="13">FORGED</text>
+  <path class="a" d="M140,120 L180,120"/><path class="a" d="M320,120 L360,120"/><path class="a" d="M540,120 L580,120"/>
+  <path class="a" d="M740,105 L780,42"/><path class="a" d="M740,120 L780,119"/><path class="a" d="M740,135 L780,196"/>
+</svg>
+</div>
+<p>Comparing against every enrolled reference and keeping the best match
+means a signer's natural style variation across sessions doesn't
+automatically count against them — only the single most-similar reference
+needs to explain the questioned signature.</p>
+
+<h2 id="preprocessing">5. Preprocessing Pipeline</h2>
+<p>Every image — sample or upload, questioned or reference — goes through
+the identical deterministic pipeline in <code>app/core/preprocess.py</code>,
+so features are directly comparable:</p>
+<table>
+<tr><th>Step</th><th>What happens</th><th>Why</th></tr>
+<tr><td>1. Decode + EXIF correct</td><td>Load via PIL, apply <code>ImageOps.exif_transpose()</code></td><td>Phone photos store rotation as metadata, not pixels — ignoring it silently processes the wrong orientation</td></tr>
+<tr><td>2. Grayscale</td><td><code>cv2.cvtColor</code> to single channel</td><td>Color isn't a signature feature; ink color varies (blue/black pen) but isn't discriminative</td></tr>
+<tr><td>3. Otsu binarization</td><td>Automatic adaptive threshold separates ink from background</td><td>Works across different lighting/scan conditions without manual tuning</td></tr>
+<tr><td>4. Despeckle</td><td>Remove connected components under 8px area</td><td>Scan/photo noise isn't signature content</td></tr>
+<tr><td>5. Crop to ink bbox</td><td>Tight crop with 6px margin</td><td>Removes irrelevant page/background area</td></tr>
+<tr><td>6. Canvas-normalize</td><td>Fit onto fixed 512×256 canvas, aspect preserved, white-padded</td><td>Images of any original size/resolution become directly comparable</td></tr>
+<tr><td>7. Skeletonize</td><td>1px-wide stroke centerline (scikit-image)</td><td>Needed for topological features (loops, junctions, endpoints) and stroke-path DTW</td></tr>
+</table>
+<div class="callout"><b>Critical invariant:</b> every image must go through
+this pipeline <em>exactly once</em> from its original form. A historical bug
+(v2, Bug #8) saved an already-processed image and re-ran preprocessing on
+it at verification time — re-binarizing an already-normalized image produces
+a materially different (worse) result than binarizing the true original.
+Fixed by always storing and reloading the original decoded image, never the
+intermediate processed form.</div>
+<div class="callout"><b>Deliberately not done — full deskew:</b> a
+signature's natural cursive slant is a real discriminative feature (see
+<code>pca_orientation_deg</code> below), not noise. Auto-rotating every
+signature to canonical horizontal would destroy that signal. Only genuine
+orientation errors (sideways photos, via EXIF) are corrected.</div>
+
+<h2 id="features">6. Feature Extraction</h2>
+<p><code>app/core/features.py::extract()</code> computes two kinds of
+representation from each preprocessed image:</p>
+<h3>A. ~20 interpretable scalar features (<code>SCALAR_CATALOG</code>)</h3>
+<table>
+<tr><th>Category</th><th>Features</th><th>What they capture</th></tr>
+<tr><td>Geometry</td><td>aspect ratio, ink density ratio, centroid X/Y, slant angle (PCA)</td><td>Overall proportions, placement, and lean of the signature</td></tr>
+<tr><td>Stroke</td><td>mean/std/CV stroke width, total stroke length</td><td>Pen pressure proxy, writing rhythm, path length</td></tr>
+<tr><td>Topology</td><td>endpoints, junctions, connected components, enclosed loops</td><td>Pen-lift pattern and stroke connectivity — hard for a forger to replicate exactly since they can't see how the original was actually written</td></tr>
+<tr><td>Shape</td><td>contour perimeter, outer contour count</td><td>Overall silhouette complexity</td></tr>
+<tr><td>Shape (advanced)</td><td>7 Hu moments</td><td>Rotation/scale/translation-invariant shape descriptors — mathematically abstract, not intuitively visible, so hard to consciously forge</td></tr>
+</table>
+<h3>B. Vector descriptors</h3>
+<table>
+<tr><th>Descriptor</th><th>What it is</th></tr>
+<tr><td>HOG (Histogram of Oriented Gradients)</td><td>Captures local stroke direction/edge patterns across the image</td></tr>
+<tr><td>LBP (Local Binary Pattern)</td><td>Captures local ink texture patterns</td></tr>
+</table>
+
+<h2 id="similarity">7. Similarity Fusion</h2>
+<p><code>engine.py::_score_against_ref()</code> combines seven independent
+comparisons into one score:</p>
+<pre>score = w[ssim]*SSIM + w[iou]*IoU + w[hog]*HOG_cos + w[lbp]*LBP_cos
+      + w[hu]*Hu_cos + w[dtw]*DTW_sim + w[scalar_profile]*ScalarProfile
+
+default weights (hand-set, or population-calibrated — see Section 15):
+  ssim=0.20  iou=0.12  hog=0.18  lbp=0.08
+  hu=0.10    dtw=0.12  scalar_profile=0.20</pre>
+<table>
+<tr><th>Component</th><th>Measures</th></tr>
+<tr><td>SSIM</td><td>Structural similarity of the aligned pixel intensities</td></tr>
+<tr><td>IoU</td><td>Ink-pixel overlap ratio after alignment</td></tr>
+<tr><td>HOG cosine</td><td>Similarity of local stroke-direction patterns</td></tr>
+<tr><td>LBP cosine</td><td>Similarity of local ink texture patterns</td></tr>
+<tr><td>Hu cosine</td><td>Similarity of rotation/scale-invariant shape descriptors</td></tr>
+<tr><td>DTW similarity</td><td>Dynamic-time-warped similarity of the stroke contour path</td></tr>
+<tr><td>Scalar profile</td><td>Mean of <code>exp(-|z|)</code> across all ~20 scalar features, where z is how many standard deviations the questioned value is from this signer's own enrolled mean (see Section 8 for how std is estimated with few samples)</td></tr>
+</table>
+<p>Before comparison, the questioned image is rigidly aligned (translation
++ rotation + scale, ORB feature matching + ECC refinement) to each
+reference in <code>app/core/align.py</code>, so incidental differences in
+how the page was photographed don't get mistaken for signature
+differences.</p>
+
+<h2 id="threshold">8. Threshold Calibration &amp; Decision Logic</h2>
+<p>This is the core of "how does the system know if a NEW signature counts
+as this person's, given natural variation is expected" — and the part
+that received the most correction across v2/v3 development.</p>
+<h3>8.1 Per-writer mean/std</h3>
+<p>From all enrolled samples' scalar features, compute a per-feature mean
+and standard deviation — this signer's own natural range for each
+measurement, not a population average.</p>
+<h3>8.2 Threshold from intra-reference agreement</h3>
+<p>With 2+ references, every pair of enrolled references is compared
+against each other (using the <em>exact same</em> aligned scoring function
+used for real verification — a historical bug, v2 Bug #7, used a different,
+cruder formula for calibration than for verification, making the threshold
+not directly comparable to real scores). The resulting intra-reference
+scores establish a baseline: <code>threshold = mean(intra) − 2·std(intra)</code>.</p>
+<div class="callout"><b>The core v3 fix (Bug #13):</b> with exactly 2
+references there is exactly ONE intra-reference comparison — and the
+standard deviation of a single number is always exactly zero. That gave
+the threshold <em>zero slack</em> for any natural variation at all. Fixed
+with a shrinkage estimator: blend the observed std toward a conservative,
+hand-set prior floor (not learned from any dataset) when few reference
+pairs exist, fading the prior out as more real references accumulate.</div>
+<div class="diagram">
+<svg viewBox="0 0 900 160" xmlns="http://www.w3.org/2000/svg" width="100%">
+  <style>.t{font-family:-apple-system,sans-serif;font-size:12px;fill:#121212;} .n{font-family:-apple-system,sans-serif;font-size:11px;fill:#7b7974;}</style>
+  <line x1="40" y1="90" x2="860" y2="90" stroke="#b7b7b5" stroke-width="2"/>
+  <rect x="40" y="80" width="330" height="20" fill="#b23b2e" opacity="0.15"/>
+  <rect x="370" y="80" width="160" height="20" fill="#b8860b" opacity="0.2"/>
+  <rect x="530" y="80" width="330" height="20" fill="#2f7d4f" opacity="0.15"/>
+  <line x1="450" y1="60" x2="450" y2="120" stroke="#121212" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text class="t" x="410" y="50">threshold</text>
+  <text class="t" x="120" y="130" fill="#b23b2e">FORGED</text>
+  <text class="t" x="415" y="145" fill="#b8860b">INCONCLUSIVE (±band, symmetric)</text>
+  <text class="t" x="660" y="130" fill="#2f7d4f">GENUINE</text>
+  <text class="n" x="370" y="72">threshold − band</text>
+  <text class="n" x="500" y="72">threshold + band</text>
+</svg>
+</div>
+<h3>8.3 The symmetric uncertain band (Bug #14)</h3>
+<p>Originally, the "uncertain" zone only existed <em>below</em> threshold —
+any score above threshold was confidently GENUINE, no matter how close.
+Fixed to be symmetric: scores within the band on <em>either</em> side route
+to human review. This matters more once the threshold itself has honest
+uncertainty (from Section 8.2's fix) baked in.</p>
+<h3>8.4 Confidence score</h3>
+<p>A logistic function of the distance from threshold: far above threshold
+→ confidence near 100%; right at threshold → confidence near 50%.</p>
+
+<h2 id="xai">9. Explainable AI Layer</h2>
+<p><code>app/llm/report.py::generate_report()</code> takes a completed
+verification case and produces a human-readable report through one of two
+paths:</p>
+<div class="grid2">
+<div class="card"><h3 style="margin-top:0">Path A — Deterministic template</h3>
+<p style="font-size:13.5px">Always available, zero dependencies. Rule-based
+sentence generation directly from the metrics: which features deviated,
+by how much, grouped by category, with a methodology section, confidence
+explanation, and concrete recommendation. <b>Cannot hallucinate</b> — it
+only restates numbers that were already computed.</p></div>
+<div class="card"><h3 style="margin-top:0">Path B — Local vision LLM</h3>
+<p style="font-size:13.5px">Optional (<code>llama-cpp-python</code> +
+GGUF model). Given the same metrics plus the actual evidence images, asked
+to narrate in plain language via a strict JSON schema. 3-attempt
+validation/repair loop; falls back to Path A on any failure.</p></div>
+</div>
+<h3>Why the LLM never decides validity</h3>
+<p>A May 2026 study found vision-LLMs reasoning freely about skilled
+forgeries get <em>more</em> confidently wrong, not less — a
+"Rationalization Trap" where the model explains away real forgery
+artifacts as natural variation while reporting high false confidence. The
+JSON schema this system sends the LLM structurally has no field for
+overriding the verdict — it can only fill in narrative fields describing
+metrics the engine already froze.</p>
+<h3>Prompt engineering (v3)</h3>
+<p>The system prompt frames the model as writing for a non-technical
+reader, explicitly asks for substantive multi-sentence sections (not
+one-liners), and the JSON contract includes <code>methodology</code>,
+<code>confidence_explanation</code>, and <code>recommendation</code>
+fields alongside the original summary/findings/conclusion — producing a
+genuinely detailed (3-page PDF) report either way.</p>
+
+<h2 id="evidence">10. Visual Evidence Generation</h2>
+<table>
+<tr><th>Asset</th><th>Generator</th><th>Shows</th></tr>
+<tr><td>Divergence heatmap</td><td><code>explain.py::heatmap_overlay</code></td><td>Jet colormap of aligned pixel-intensity difference — warm = high divergence. (Not literally Grad-CAM, which needs a differentiable neural network; this serves the same visual-attribution purpose for a classical pipeline.)</td></tr>
+<tr><td>Ink agreement overlay</td><td><code>alignment_overlay</code></td><td>Green = ink present in both, red = questioned-only, blue = reference-only</td></tr>
+<tr><td>Stroke skeleton comparison</td><td><code>skeleton_compare</code></td><td>1px stroke centerlines overlaid, color-coded by source</td></tr>
+<tr><td>Annotated regions</td><td><code>annotated_regions</code> / <code>annotate_regions</code></td><td>Bounding boxes + labels on the specific regions driving the verdict, with collision-avoidance so overlapping findings don't render illegibly on top of each other</td></tr>
+</table>
+
+<h2 id="feedback">11. Online Feedback Loop</h2>
+<p><code>engine.py::feedback()</code> lets an examiner confirm or correct a
+verdict after the fact. Confirming reinforces the current threshold;
+correcting nudges it — a lightweight statistical update, not gradient
+descent on a neural network. This is the system's "learns over time"
+mechanism from the original project brief, implemented without any
+external training data.</p>
+
+<h2 id="gpu">12. Hardware &amp; GPU Selection</h2>
+<p><code>app/device.py::detect_device()</code> probes the machine (RAM via
+psutil, GPU via <code>nvidia-smi</code>, Apple Silicon via platform arch)
+and recommends a GGUF model tier. On multi-GPU machines, the GPU with the
+most VRAM is selected automatically (an integrated GPU like Intel UHD
+Graphics is never returned by <code>nvidia-smi</code> at all, so it can
+never be mistakenly preferred over a discrete NVIDIA card). If a model is
+already downloaded, that one is used regardless of what hardware-tier
+logic would otherwise suggest, so status and load never disagree about
+which model is active.</p>
+
+<h2 id="files">13. Codebase Reference</h2>
+<table>
+<tr><th>File</th><th>Role</th></tr>
+<tr><td><code>main.py</code></td><td>Web app entry point — FastAPI + static frontend mount</td></tr>
+<tr><td><code>cli.py</code></td><td>Terminal UI entry point (rich) — full functionality without a browser</td></tr>
+<tr><td><code>install.py</code></td><td>One-command cross-platform installer, hardware-aware</td></tr>
+<tr><td><code>app/config.py</code></td><td>Paths, constants, app title</td></tr>
+<tr><td><code>app/device.py</code></td><td>Hardware detection + GGUF model tier selection</td></tr>
+<tr><td><code>app/core/preprocess.py</code></td><td>Image loading, EXIF correction, binarization, crop, normalize, skeletonize</td></tr>
+<tr><td><code>app/core/align.py</code></td><td>Rigid alignment (ORB + ECC) of query vs. reference</td></tr>
+<tr><td><code>app/core/features.py</code></td><td>Scalar + vector feature extraction</td></tr>
+<tr><td><code>app/core/similarity.py</code></td><td>The 7 comparison-method implementations</td></tr>
+<tr><td><code>app/core/explain.py</code></td><td>Heatmap / overlay / skeleton / annotated evidence images</td></tr>
+<tr><td><code>app/core/engine.py</code></td><td><b>The decision engine</b> — enroll / verify / feedback / threshold calibration</td></tr>
+<tr><td><code>app/core/storage.py</code></td><td>JSON persistence for profiles and cases</td></tr>
+<tr><td><code>app/api/routes.py</code></td><td>REST API wiring engine → HTTP</td></tr>
+<tr><td><code>app/llm/manager.py</code></td><td>GGUF model download + llama-cpp-python inference, GPU-aware</td></tr>
+<tr><td><code>app/llm/prompts.py</code></td><td>Forensic-examiner system prompt + JSON contract</td></tr>
+<tr><td><code>app/llm/report.py</code></td><td><b>The explanation layer</b> — template + LLM report generation</td></tr>
+<tr><td><code>web/</code></td><td>Frontend — plain HTML/CSS/JS, no build step</td></tr>
+<tr><td><code>training/calibrate_weights.py</code></td><td>Optional: fit fusion weights from a labelled dataset (de-prioritized by default, v3)</td></tr>
+<tr><td><code>PROJECT_MEMORY_v8.md</code></td><td>Single source of truth — full chronological history, every bug found and fixed with evidence</td></tr>
+</table>
+
+<h2 id="stack">14. Technology Stack</h2>
+<table>
+<tr><th>Layer</th><th>Technology</th><th>Why</th></tr>
+<tr><td>Core engine</td><td>Python, NumPy, OpenCV, scikit-image, SciPy</td><td>Classical CV — no GPU or pretraining required, runs anywhere</td></tr>
+<tr><td>Web server</td><td>FastAPI + Uvicorn</td><td>Fast, typed, auto-documented API</td></tr>
+<tr><td>Frontend</td><td>Vanilla HTML/CSS/JS</td><td>Zero build step — <code>python main.py</code> is the whole setup</td></tr>
+<tr><td>Terminal UI</td><td>Rich</td><td>Cross-platform colored/formatted terminal output</td></tr>
+<tr><td>Report generation</td><td>ReportLab (PDF), native HTML</td><td>No external service dependency</td></tr>
+<tr><td>Local LLM inference</td><td>llama-cpp-python + GGUF</td><td>Single code path for CPU / CUDA / Metal / Vulkan — no CUDA-only lock-in</td></tr>
+<tr><td>Recommended model</td><td>Gemma 4 family (E2B–31B, GGUF, QAT)</td><td>Multimodal, tiered for any hardware from 3GB to 18GB+</td></tr>
+</table>
+
+<h2 id="history">15. Version History</h2>
+<table>
+<tr><th>Version</th><th>Focus</th></tr>
+<tr><td>v1</td><td>First runnable version — entry points, web UI, CLI, installer, LLM backend built from scratch (prior state was a non-functional backend skeleton)</td></tr>
+<tr><td>v2</td><td>Fixed a 3-part compounding bug causing genuine signatures to score FORGED (z-score blowup, mismatched calibration formula, double preprocessing). Added dataset-based fusion-weight calibration.</td></tr>
+<tr><td>v3</td><td>Fixed the remaining root cause (small-sample threshold statistics — zero slack with 2 references). De-prioritized dataset training per user's security preference in favor of this fix. Multi-GPU support, GPU-offload visibility, 3-page reports, EXIF handling, Windows launch fixes, this document.</td></tr>
+</table>
+<p>Full evidence-backed detail for every item above is in
+<code>PROJECT_MEMORY_v8.md</code> — this document is the presentation-level
+summary; that file is the primary source of truth.</p>
+
+<h2 id="v4">16. v4 Additions</h2>
+<table>
+<tr><th>Addition</th><th>Status</th></tr>
+<tr><td>Real KernelSHAP attribution over classical features (<code>app/core/shap_explain.py</code>)</td><td>Fully tested — verified via the Shapley efficiency property (attributions sum to exactly full-minus-baseline score)</td></tr>
+<tr><td>CNN-SigNet (Siamese CNN) + genuine Grad-CAM (<code>app/core/signet.py</code>)</td><td>Written, optional (needs torch), purely additive — fallback path fully verified, torch-enabled path NOT independently tested (torch could not be made to import in the development environment — concrete evidence in PROJECT_MEMORY_v8.md)</td></tr>
+<tr><td>Single-model simplification</td><td>Exactly one LLM model now, no tier system — removes a whole bug class</td></tr>
+<tr><td>LLM install fix (3rd attempt)</td><td>Root-caused properly this time — direct GitHub Releases wheel URL, verified end-to-end in clean-room testing</td></tr>
+</table>
+<p>Trained per-profile from only that profile's own augmented samples — no
+external dataset, consistent with the project's core invariant. See
+<code>PROJECT_MEMORY_v8.md</code>'s v4 status for the full, honest account of
+what was and wasn't verifiable in this development session.</p>
+
+<h2 id="limits">17. Honest Limitations</h2>
+<p><i>(renumbered from v3's Section 16 — see the table above for v4-specific caveats)</i></p>
+<ul style="font-size:14.5px;color:var(--graphite);">
+<li>Accuracy has only been validated on a 10-writer CEDAR sweep (20 verifications) — not a large-scale benchmark. See PROJECT_MEMORY_v8.md Section 4 for the exact numbers and their caveats.</li>
+<li>With only 2 enrolled references, a meaningful fraction of verifications correctly route to INCONCLUSIVE rather than being auto-decided — enrolling 3-5 references improves this.</li>
+<li>The heatmap is a pixel-divergence visualization, not literally Grad-CAM/SHAP (those require a differentiable model this classical pipeline doesn't have).</li>
+<li>GPU offload logic is correct by inspection but not yet confirmed on real GPU hardware in this development environment.</li>
+<li>Multi-script (non-Latin) signature generalization is architecturally reasoned (features are script-agnostic) but not empirically tested against real non-Latin samples.</li>
+</ul>
+
+<h2 id="v5">18. v5 Additions</h2>
+<table>
+<tr><th>Addition</th><th>Status</th></tr>
+<tr><td>Multi-reference recognition: every enrolled reference is scored, plus a ProtoSig-style aggregate prototype, fused 50/50 with the best individual match</td><td>Fully tested against real CEDAR images — see PROJECT_MEMORY_v8.md Bug #21</td></tr>
+<tr><td>Independent edge-case re-evaluation pass over the per-reference score distribution (can only downgrade toward INCONCLUSIVE, never invert a verdict)</td><td>Fully tested; one dev-time miscalibration was caught by a 10-writer sweep and retuned before shipping — see Bug #21's dev-sweep note</td></tr>
+<tr><td>Alignment rewrite: scored multi-candidate transform selection (identity / centroid / PCA-moments / ORB+ECC, rotation-clipped) instead of trusting ORB unconditionally</td><td>Fully tested — verified a synthetically-rotated image's ink IoU roughly doubled after alignment, with a visual overlay check</td></tr>
+<tr><td>LLM on-disk detection + autostart: checks model path/size and GPU at server launch, loads automatically in the background</td><td>Logic fully tested with a synthetic fake-sized model + mocked device profile (this dev sandbox has no real 5GB+ model/GPU) — needs user verification on real hardware</td></tr>
+<tr><td>Real test-time calibration: confirmed-GENUINE feedback can promote the query into the profile as a new reference and relearn all statistics</td><td>Fully tested end-to-end against a live server</td></tr>
+</table>
+<p>Honest limitation carried forward, not solved by this round: skilled-forgery
+detection with purely classical features remains weak (0/10 confidently
+correct in the v5 sweep). See PROJECT_MEMORY_v8.md Section 7 — the
+literature-supported next step is the already-written CNN-SigNet path,
+which needs verification on a machine where torch actually imports.</p>
+
+<footer>SignXAI — generated as a presentation companion to PROJECT_MEMORY_v8.md. Not a substitute for reading the full source.</footer>
+</main>
+</div>
+</body>
+</html>
